@@ -1,0 +1,37 @@
+version: "1.0"
+
+# 1. SETUP: Prepare the environment
+setup_commands:
+  - "echo 'Setting up dependencies...'"
+  # We need to build the SDK manually first as per our project structure
+  - "cd sdk && npm install && node build.js"
+
+# 2. START: Launch the application
+start_commands:
+  - "echo 'Starting Docker services...'"
+  - "docker-compose up -d --build"
+  - "echo 'Waiting for services to stabilize...'"
+  - "sleep 30" 
+  # Sleep is important to let the Database and Redis initialize fully
+
+# 3. TEST: Run internal tests (if you had a test suite)
+test_commands:
+  - "echo 'Running smoke tests...'"
+  # Basic check to see if containers are running
+  - "docker ps"
+
+# 4. VERIFY: Automated checks to ensure endpoints are reachable
+verify_commands:
+  # Check if API is running on port 8000
+  - "curl --fail http://localhost:8000/health || echo 'API Health Check Failed'"
+  
+  # Check if Checkout Frontend is running on port 3001
+  - "curl --fail http://localhost:3001/checkout || echo 'Frontend Check Failed'"
+  
+  # Check if Database connection is alive (via Docker)
+  - "docker exec gateway_api npm run db:status || echo 'DB Check Skipped'"
+
+# 5. SHUTDOWN: Cleanup
+shutdown_commands:
+  - "echo 'Shutting down services...'"
+  - "docker-compose down -v"

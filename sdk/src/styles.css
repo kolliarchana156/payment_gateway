@@ -1,0 +1,40 @@
+#payment-gateway-modal {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 2147483647; /* High z-index to be on top of everything */
+  font-family: sans-serif;
+}
+
+.pg-overlay {
+  background: rgba(0,0,0,0.6);
+  width: 100%; height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.pg-iframe {
+  width: 400px;
+  height: 600px;
+  background: white;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.pg-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: white;
+  border: none;
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

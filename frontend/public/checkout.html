@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Checkout</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; text-align: center; }
+        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 10px;}
+        button:disabled { background: #ccc; }
+        .success { color: green; display: none; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Pay ₹500.00</h2>
+        <p>Order ID: <span id="order-id">...</span></p>
+        
+        <div id="payment-form">
+            <p>Select Method:</p>
+            <select id="method">
+                <option value="upi">UPI</option>
+                <option value="card">Credit Card</option>
+            </select>
+            <br><br>
+            <button id="pay-btn" onclick="processPayment()">Pay Now</button>
+        </div>
+
+        <div id="success-msg" class="success">
+            <h3>✅ Payment Successful!</h3>
+            <p>Closing window...</p>
+        </div>
+    </div>
+
+    <script>
+        // 1. Get Order ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order_id');
+        document.getElementById('order-id').innerText = orderId || 'Unknown';
+
+        async function processPayment() {
+            const btn = document.getElementById('pay-btn');
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+
+            try {
+                // --- THE FIX IS HERE ---
+                // Instead of calling localhost:8000 directly, we call our own server route '/pay'
+                const res = await fetch('/pay', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        amount: 5000,
+                        currency: 'INR',
+                        method: document.getElementById('method').value,
+                        order_id: orderId
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) { // Check if the server returned a success status (200-299)
+                    // 3. Success! Notify the Parent Window (The SDK)
+                    document.getElementById('payment-form').style.display = 'none';
+                    document.getElementById('success-msg').style.display = 'block';
+
+                    // Send message to parent
+                    setTimeout(() => {
+                        window.parent.postMessage({
+                            type: 'payment_success',
+                            data: { paymentId: data.id || 'demo_id' }
+                        }, '*');
+                    }, 1500);
+                } else {
+                    throw new Error('Server returned error');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Payment Failed');
+                btn.disabled = false;
+                btn.innerText = "Pay Now";
+            }
+        }
+    </script>
+</body>
+</html>

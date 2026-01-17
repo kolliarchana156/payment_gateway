@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: gateway_db
+    environment:
+      POSTGRES_USER: gateway_user
+      POSTGRES_PASSWORD: gateway_pass
+      POSTGRES_DB: payment_gateway
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gateway_user -d payment_gateway"]
+      interval: 5s
+      retries: 5
+  
+  checkout:
+    image: node:18-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+      - ./sdk:/sdk
+    command: sh -c "npm install && node server.js"
+    ports:
+      - "3001:3001"
+  # 2. Redis (The Message Queue)
+  redis:
+    image: redis:7-alpine
+    container_name: gateway_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # 3. Main API Service
+  api:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gateway_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://gateway_user:gateway_pass@postgres:5432/payment_gateway
+      - REDIS_URL=redis://redis:6379
+      - PORT=8000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+  # 4. Worker Service (Background Jobs)
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.worker
+    container_name: gateway_worker
+    environment:
+      - DATABASE_URL=postgresql://gateway_user:gateway_pass@postgres:5432/payment_gateway
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:

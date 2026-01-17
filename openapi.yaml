@@ -1,0 +1,83 @@
+openapi: 3.0.0
+info:
+  title: Payment Gateway API
+  description: Internal API for processing payments asynchronously.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local Docker Environment
+
+paths:
+  /api/v1/payments:
+    post:
+      summary: Initiate a Payment
+      description: Creates a payment record and queues it for background processing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+                - currency
+                - method
+                - order_id
+              properties:
+                amount:
+                  type: integer
+                  example: 5000
+                  description: Amount in smallest currency unit (e.g., paise)
+                currency:
+                  type: string
+                  example: INR
+                method:
+                  type: string
+                  enum: [upi, card]
+                order_id:
+                  type: string
+                  example: order_12345
+      responses:
+        '202':
+          description: Accepted. Payment is processing.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    example: pending
+        '400':
+          description: Invalid Input
+
+  /api/v1/payments/{id}:
+    get:
+      summary: Get Payment Status
+      description: Returns the current status of a payment transaction.
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: string
+          required: true
+          description: The UUID of the payment
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    example: success
+                  amount:
+                    type: integer
+        '404':
+          description: Payment not found

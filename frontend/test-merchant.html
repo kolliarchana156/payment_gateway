@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Store (Merchant)</title>
+    <style>
+        body { font-family: sans-serif; padding: 50px; text-align: center; }
+        button { padding: 15px 30px; font-size: 20px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px;}
+    </style>
+</head>
+<body>
+
+    <h1>Awesome T-Shirt Store</h1>
+    <p>Price: ₹500.00</p>
+    
+    <button id="buy-btn">Buy Now</button>
+
+    <script src="http://localhost:3001/checkout.js"></script>
+
+    <script>
+        document.getElementById('buy-btn').addEventListener('click', () => {
+            
+            // 2. Initialize YOUR Gateway
+            const payment = new PaymentGateway({
+                key: 'merchant_key_123', // Dummy key for now
+                orderId: 'order_' + Math.floor(Math.random() * 1000), // Random Order ID
+                
+                // 3. Handle Success
+                onSuccess: (data) => {
+                    alert('Success! Payment ID: ' + data.paymentId);
+                    console.log('Payment Data:', data);
+                },
+
+                // 4. Handle Failure
+                onFailure: (error) => {
+                    alert('Failed: ' + error.message);
+                }
+            });
+
+            // 5. Open the Modal
+            payment.open();
+        });
+    </script>
+</body>
+</html>
